@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { formatMoney } from "@/lib/format";
 import type { PageMeta } from "@/lib/models";
 import { useStore } from "./store";
@@ -26,6 +27,62 @@ export function Field({
       {children}
       {hint ? <span className="text-xs text-muted">{hint}</span> : null}
     </label>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M10.5 6.2A10.7 10.7 0 0 1 12 6c6.5 0 10 6 10 6a18.4 18.4 0 0 1-3.2 3.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M6.1 6.8C3.6 8.5 2 12 2 12s3.5 6 10 6c1.4 0 2.7-.3 3.8-.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M9.9 9.9a2.5 2.5 0 0 0 3.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PasswordField({
+  label,
+  hint,
+  id,
+  className = "",
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
+  const [visible, setVisible] = useState(false);
+  const inputId = id ?? props.name ?? "password";
+  return (
+    <div className="grid gap-1.5 text-sm">
+      <label htmlFor={inputId} className="font-medium text-ink/80">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          {...props}
+          id={inputId}
+          type={visible ? "text" : "password"}
+          className={`${fieldClass} pr-12 ${className}`}
+        />
+        <button
+          type="button"
+          className="absolute inset-y-1 right-1 grid w-10 place-items-center rounded-lg text-muted hover:bg-sand hover:text-ink"
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+          onClick={() => setVisible((current) => !current)}
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
+      {hint ? <span className="text-xs text-muted">{hint}</span> : null}
+    </div>
   );
 }
 

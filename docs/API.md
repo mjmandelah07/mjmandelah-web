@@ -567,7 +567,9 @@ Each sale item includes `remainingQty` for the returns screen.
 
 ### GET /sales
 
-`channel`, `status`, `paymentMethod`, `cashierId`, `search` (receipt number), `from`, `to`, `page`, `pageSize`.
+`channel`, `status`, `paymentMethod`, `cashierId`, `productId`, `search` (receipt number), `from`, `to`, `page`, `pageSize`.
+
+`productId` keeps sales that include that product.
 
 `status`: `COMPLETED`, `PARTIAL_RETURN`, `RETURNED`, `VOID`.
 
@@ -804,6 +806,43 @@ Low-stock notifications use `type: "LOW_STOCK"`. `productId` may be `null` for o
 ```
 
 ## Reports
+
+### GET /reports/analytics?from=2026-11-01&to=2026-11-24&bucket=day
+
+Managers. Defaults to the current UTC day. `bucket` is `hour`, `day`, or `month`. A long range is widened automatically so the chart stays readable: more than 3 days of hours becomes days, and more than 120 days becomes months.
+
+Voided sales are excluded. `series` has one point per bucket, including empty ones. `popularProducts` is the top 8 by quantity. `bestSales` is the 5 highest totals.
+
+```json
+{
+  "from": "2026-11-24T00:00:00.000Z",
+  "to": "2026-11-25T00:00:00.000Z",
+  "bucket": "hour",
+  "salesCount": 12,
+  "retailTotal": 84000,
+  "wholesaleTotal": 150000,
+  "total": 234000,
+  "averageSale": 19500,
+  "unitsSold": 40,
+  "series": [{ "bucket": "2026-11-24T08:00:00.000Z", "retail": 3600, "wholesale": 0, "count": 1 }],
+  "payments": [{ "method": "CASH", "count": 8, "total": 84000 }],
+  "popularProducts": [
+    { "productId": "e44f55a6-b7c8-4923-a345-6789abcdef01", "name": "Milo 400g", "sku": "ML-400", "quantity": 14, "total": 25200 }
+  ],
+  "bestSales": [
+    {
+      "id": "e00f11a2-b3c4-4589-a901-cdef01234567",
+      "receiptNumber": "RCP-20261124-0001",
+      "channel": "WHOLESALE",
+      "paymentMethod": "TRANSFER",
+      "total": 48000,
+      "createdAt": "2026-11-24T11:00:00.000Z",
+      "cashier": { "fullName": "Super Admin" }
+    }
+  ],
+  "cashiers": [{ "id": "7c2a1e40-1b3d-4f8a-9c11-0a6e5d2b8f44", "fullName": "Super Admin", "count": 12, "total": 234000 }]
+}
+```
 
 ### GET /reports/overview?from=2026-11-01&to=2026-11-24
 

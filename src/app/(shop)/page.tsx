@@ -64,7 +64,10 @@ export default function DashboardPage() {
         </Card>
         {manager && overview ? (
           <Card>
-            <p className="text-sm text-muted">Shop takings</p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm text-muted">Shop takings</p>
+              <TextLink href="/analytics">Charts</TextLink>
+            </div>
             <p className="mt-2 font-display text-4xl">
               <Money amount={overview.retailTotal + overview.wholesaleTotal} />
             </p>

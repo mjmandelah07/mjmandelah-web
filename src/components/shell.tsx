@@ -2,33 +2,85 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { isManager, type Role } from "@/lib/models";
 import { roleLabel } from "@/lib/format";
+import { iconForGroup, iconForHref, LogoutIcon, NavIcon } from "./icons";
 import { useSession } from "./session";
 import { useStore } from "./store";
 
-const links: Array<{ href: string; label: string; manager?: boolean; super?: boolean }> = [
-  { href: "/", label: "Counter" },
-  { href: "/sell", label: "Sell" },
-  { href: "/sales", label: "Sales" },
-  { href: "/products", label: "Products" },
-  { href: "/customers", label: "Customers" },
-  { href: "/returns", label: "Returns" },
-  { href: "/damages", label: "Damages" },
-  { href: "/notifications", label: "Alerts" },
-  { href: "/stock", label: "Stock", manager: true },
-  { href: "/categories", label: "Categories", manager: true },
-  { href: "/suppliers", label: "Suppliers", manager: true },
-  { href: "/users", label: "Staff", manager: true },
-  { href: "/jobs", label: "Jobs", manager: true },
-  { href: "/settings", label: "Store", super: true },
+type NavLink = { href: string; label: string; manager?: boolean; super?: boolean };
+
+type NavEntry =
+  | ({ kind: "link" } & NavLink)
+  | { kind: "group"; id: string; label: string; items: NavLink[] };
+
+type MenuEntry =
+  | { type: "link"; href: string; label: string }
+  | { type: "group"; id: string; label: string; items: NavLink[] };
+
+const navigation: NavEntry[] = [
+  { kind: "link", href: "/", label: "Counter" },
+  { kind: "link", href: "/sell", label: "Sell" },
+  { kind: "link", href: "/sales", label: "Sales" },
+  { kind: "link", href: "/products", label: "Products" },
+  { kind: "link", href: "/customers", label: "Customers" },
+  { kind: "link", href: "/returns", label: "Returns" },
+  { kind: "link", href: "/damages", label: "Damages" },
+  { kind: "link", href: "/notifications", label: "Alerts" },
+  { kind: "link", href: "/stock", label: "Stock", manager: true },
+  { kind: "link", href: "/analytics", label: "Analytics", manager: true },
+  { kind: "link", href: "/audit", label: "Audit" },
+  {
+    kind: "group",
+    id: "setup",
+    label: "Setup",
+    items: [
+      { href: "/categories", label: "Categories", manager: true },
+      { href: "/suppliers", label: "Suppliers", manager: true },
+      { href: "/users", label: "Staff", manager: true },
+      { href: "/jobs", label: "Jobs", manager: true },
+      { href: "/settings", label: "Store", super: true },
+    ],
+  },
+  { kind: "link", href: "/profile", label: "Profile" },
 ];
 
-function allowed(role: Role, item: (typeof links)[number]) {
+function allowed(role: Role, item: NavLink) {
   if (item.super) return role === "SUPER_ADMIN";
   if (item.manager) return isManager(role);
   return true;
+}
+
+function isActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 opacity-70 transition ${open ? "rotate-90" : ""}`}>
+      <path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function initials(name: string) {
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "");
+  return letters.join("") || "M";
+}
+
+function rowClass(tone: "active" | "quiet" | "idle") {
+  const tones = {
+    active: "bg-sand text-ink",
+    quiet: "bg-white/10 text-paper",
+    idle: "text-sand/90 hover:bg-white/10",
+  };
+  return `flex h-8 items-center gap-2.5 rounded-xl px-2.5 text-sm font-medium transition-colors ${tones[tone]}`;
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -37,15 +89,42 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useSession();
   const store = useStore();
   const [open, setOpen] = useState(false);
-  const items = links.filter((item) => (user ? allowed(user.role, item) : false));
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+
+  const entries = useMemo(() => {
+    if (!user) return [];
+    return navigation.flatMap((entry): MenuEntry[] => {
+      if (entry.kind === "link") {
+        return allowed(user.role, entry) ? [{ type: "link" as const, href: entry.href, label: entry.label }] : [];
+      }
+      const items = entry.items.filter((item) => allowed(user.role, item));
+      if (items.length === 1) return [{ type: "link" as const, href: items[0].href, label: items[0].label }];
+      if (items.length > 1) return [{ type: "group" as const, id: entry.id, label: entry.label, items }];
+      return [];
+    });
+  }, [user]);
+
+  const routeGroup = entries.reduce<string | null>((current, entry) => {
+    if (current) return current;
+    if (entry.type === "group" && entry.items.some((item) => isActive(pathname, item.href))) return entry.id;
+    return null;
+  }, null);
+
+  useEffect(() => {
+    if (routeGroup) setOpenGroup(routeGroup);
+  }, [routeGroup]);
 
   function signOut() {
     logout();
     router.replace("/login");
   }
 
+  function closeMenu() {
+    setOpen(false);
+  }
+
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
+    <div className="min-h-screen">
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-paper/90 px-4 py-3 backdrop-blur lg:hidden">
         <button className="rounded-lg px-2 py-1 text-sm font-semibold" onClick={() => setOpen(true)} type="button">
           Menu
@@ -66,41 +145,95 @@ export function Shell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(84vw,280px)] flex-col bg-moss text-paper transition lg:static lg:w-auto lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(86vw,16rem)] flex-col overflow-hidden bg-moss text-paper shadow-[8px_0_24px_rgba(22,56,44,0.08)] transition lg:w-64 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="border-b border-white/10 px-5 py-6">
-          <p className="text-xs uppercase tracking-[0.18em] text-sand/80">Shop floor</p>
-          <p className="font-display text-2xl leading-tight">{store.name}</p>
+        <div className="flex shrink-0 items-center gap-3 px-4 pt-4 pb-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sand font-display text-lg text-ink">M</span>
+          <div className="min-w-0">
+            <p className="truncate font-display text-xl leading-none">{store.name}</p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sand/65">Shop floor</p>
+          </div>
         </div>
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {items.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        <nav className="sidebar-nav flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-3">
+          {entries.map((entry) => {
+            if (entry.type === "link") {
+              const active = isActive(pathname, entry.href);
+              const link = (
+                <Link key={entry.href} href={entry.href} onClick={closeMenu} className={rowClass(active ? "active" : "idle")}>
+                  <NavIcon name={iconForHref(entry.href)} />
+                  <span className="truncate">{entry.label}</span>
+                </Link>
+              );
+              if (entry.href === "/profile") {
+                return (
+                  <div key={entry.href} className="mt-auto border-t border-white/10 pt-2">
+                    {link}
+                  </div>
+                );
+              }
+              return link;
+            }
+
+            const expanded = openGroup === entry.id;
+            const groupActive = entry.items.some((item) => isActive(pathname, item.href));
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={`mb-1 flex items-center rounded-xl px-3 py-2.5 text-sm font-medium ${
-                  active ? "bg-sand text-ink" : "text-sand/90 hover:bg-white/10"
-                }`}
-              >
-                {item.label}
-              </Link>
+              <div key={entry.id}>
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  className={`w-full ${rowClass(groupActive && !expanded ? "quiet" : "idle")}`}
+                  onClick={() => setOpenGroup(expanded ? null : entry.id)}
+                >
+                  <NavIcon name={iconForGroup(entry.id)} />
+                  <span className="min-w-0 flex-1 truncate text-left">{entry.label}</span>
+                  <Chevron open={expanded} />
+                </button>
+                {expanded ? (
+                  <div className="mt-0.5 ml-4 grid gap-0.5 border-l border-white/15 pl-2">
+                    {entry.items.map((item) => {
+                      const active = isActive(pathname, item.href);
+                      return (
+                        <Link key={item.href} href={item.href} onClick={closeMenu} className={rowClass(active ? "active" : "idle")}>
+                          <NavIcon name={iconForHref(item.href)} />
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </nav>
-        <div className="border-t border-white/10 px-5 py-4">
-          <p className="font-medium">{user?.fullName}</p>
-          <p className="text-xs text-sand/70">{user ? roleLabel(user.role) : ""}</p>
-          <button className="mt-3 text-sm text-sand underline-offset-2 hover:underline" onClick={signOut} type="button">
-            Sign out
-          </button>
+        <div className="shrink-0 border-t border-white/10 p-3">
+          <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-2.5 py-2">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-semibold text-ink">
+              {initials(user?.fullName ?? store.name)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <Link href="/profile" onClick={closeMenu} className="block truncate text-sm font-semibold hover:underline">
+                {user?.fullName}
+              </Link>
+              <p className="truncate text-xs text-sand/70">{user ? roleLabel(user.role) : ""}</p>
+            </div>
+            <button
+              type="button"
+              aria-label="Sign out"
+              title="Sign out"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sand/80 hover:bg-white/10 hover:text-paper"
+              onClick={signOut}
+            >
+              <LogoutIcon />
+            </button>
+          </div>
         </div>
       </aside>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">{children}</main>
+      <main className="lg:pl-64">
+        <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">{children}</div>
+      </main>
     </div>
   );
 }

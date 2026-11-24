@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Field, Notice, fieldClass } from "@/components/ui";
+import { Button, Field, Notice, PasswordField, fieldClass } from "@/components/ui";
 import { useSession } from "@/components/session";
 
 export default function LoginPage() {
@@ -57,9 +57,7 @@ export default function LoginPage() {
           <Field label="Email">
             <input className={fieldClass} type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </Field>
-          <Field label="Password">
-            <input className={fieldClass} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
-          </Field>
+          <PasswordField label="Password" id="login-password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           <Button type="submit" disabled={pending}>
             {pending ? "Checking…" : "Open the counter"}
           </Button>

@@ -307,6 +307,31 @@ export type OverviewReport = {
   }>;
 };
 
+export type AnalyticsReport = {
+  from: string;
+  to: string;
+  bucket: "hour" | "day" | "month";
+  salesCount: number;
+  retailTotal: number;
+  wholesaleTotal: number;
+  total: number;
+  averageSale: number;
+  unitsSold: number;
+  series: Array<{ bucket: string; retail: number; wholesale: number; count: number }>;
+  payments: Array<{ method: PaymentMethod; count: number; total: number }>;
+  popularProducts: Array<{ productId: string; name: string; sku: string; quantity: number; total: number }>;
+  bestSales: Array<{
+    id: string;
+    receiptNumber: string;
+    channel: SaleChannel;
+    paymentMethod: PaymentMethod;
+    total: number;
+    createdAt: string;
+    cashier: { fullName: string };
+  }>;
+  cashiers: Array<{ id: string; fullName: string; count: number; total: number }>;
+};
+
 export type MyReport = {
   from: string;
   to: string;
