@@ -1,0 +1,31 @@
+@base = http://localhost:3000/api
+
+### Login
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@mjmandelah.store",
+  "password": "ChangeMe123!"
+}
+
+### Me
+GET {{base}}/auth/me
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Categories
+GET {{base}}/categories
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Products
+GET {{base}}/products?search=
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Low stock
+GET {{base}}/products?lowStock=true
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Overview
+GET {{base}}/reports/overview
+Authorization: Bearer {{login.response.body.accessToken}}

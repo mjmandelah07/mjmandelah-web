@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-sans-app);
+  --font-display: var(--font-display-app);
+  --color-ink: #1c1712;
+  --color-paper: #f4efe6;
+  --color-card: #fffdf8;
+  --color-line: #e4d8c8;
+  --color-moss: #16382c;
+  --color-leaf: #2f6b4f;
+  --color-clay: #c4521a;
+  --color-sand: #efe2d0;
+  --color-muted: #6f655c;
+  --color-danger: #9f2d2d;
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 420px at 110% -10%, #f0ddc4 0%, transparent 60%),
+    var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans), "Figtree", sans-serif;
+}
+
+.font-display,
+.num {
+  font-family: var(--font-display), "Fraunces", serif;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
