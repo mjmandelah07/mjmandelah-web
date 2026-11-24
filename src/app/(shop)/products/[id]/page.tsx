@@ -149,7 +149,7 @@ export default function ProductDetailPage() {
                 <input type="checkbox" name="isActive" defaultChecked={product.isActive} />
                 Active
               </label>
-              <p className="text-xs text-muted">Quantity changes through stock intake or an adjustment.</p>
+              <p className="text-xs text-muted">SKU {product.sku} stays as the shop assigned it. Quantity changes through stock intake or an adjustment.</p>
               <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save changes"}</Button>
             </form>
           </Card>

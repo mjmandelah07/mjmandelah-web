@@ -67,7 +67,7 @@ export default function NewProductPage() {
         <form className="grid gap-4" onSubmit={onSubmit}>
           {error ? <Notice>{error}</Notice> : null}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name">
+            <Field label="Name" hint="The shop assigns a SKU from this name.">
               <input className={fieldClass} name="name" required minLength={2} />
             </Field>
             <Field label="Category">
@@ -89,9 +89,6 @@ export default function NewProductPage() {
             </Field>
             <Field label="Unit" hint="pcs, carton, bottle">
               <input className={fieldClass} name="unit" placeholder="pcs" />
-            </Field>
-            <Field label="SKU" hint="Generated when left blank">
-              <input className={fieldClass} name="sku" />
             </Field>
             <Field label="Barcode">
               <input className={fieldClass} name="barcode" />

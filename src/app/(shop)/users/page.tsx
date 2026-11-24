@@ -21,6 +21,7 @@ export default function UsersPage() {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
   const [handed, setHanded] = useState<{ name: string; email: string; password: string } | null>(null);
+  const [editing, setEditing] = useState<StaffUser | null>(null);
 
   useEffect(() => {
     if (user && !isManager(user.role)) router.replace("/");
@@ -36,25 +37,48 @@ export default function UsersPage() {
     if (user && isManager(user.role)) load();
   }, [user]);
 
+  function resetForm() {
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setRole("CASHIER");
+    setEditing(null);
+  }
+
+  function beginEdit(member: StaffUser) {
+    setEditing(member);
+    setFullName(member.fullName);
+    setEmail(member.email);
+    setPhone(member.phone ?? "");
+    setRole(member.role);
+    setError("");
+  }
+
   async function create(event: FormEvent) {
     event.preventDefault();
     setError("");
     setPending(true);
-    const password = generatePassword();
     try {
-      await api("/users", {
-        method: "POST",
-        body: JSON.stringify({ fullName, email, password, phone: phone || undefined, role }),
-      });
-      setCopied(false);
-      setCopyError("");
-      setHanded({ name: fullName, email, password });
-      setFullName("");
-      setEmail("");
-      setPhone("");
+      if (editing) {
+        await api(`/users/${editing.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ fullName, email, phone, role }),
+        });
+        resetForm();
+      } else {
+        const password = generatePassword();
+        await api("/users", {
+          method: "POST",
+          body: JSON.stringify({ fullName, email, password, phone: phone || undefined, role }),
+        });
+        setCopied(false);
+        setCopyError("");
+        setHanded({ name: fullName, email, password });
+        resetForm();
+      }
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not create the account");
+      setError(caught instanceof Error ? caught.message : "Could not save the account");
     } finally {
       setPending(false);
     }
@@ -93,9 +117,12 @@ export default function UsersPage() {
       <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
         <Card>
           <form className="grid gap-3" onSubmit={create}>
-            <Field label="Full name"><input className={fieldClass} value={fullName} onChange={(event) => setFullName(event.target.value)} required /></Field>
+            <p className="font-display text-2xl">{editing ? "Edit staff" : "New staff"}</p>
+            <Field label="Full name"><input className={fieldClass} value={fullName} onChange={(event) => setFullName(event.target.value)} required minLength={2} /></Field>
             <Field label="Email"><input className={fieldClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
-            <p className="text-xs text-muted">A password is created for them. You copy it from the next screen and send it yourself.</p>
+            {editing ? null : (
+              <p className="text-xs text-muted">A password is created for them. You copy it from the next screen and send it yourself.</p>
+            )}
             <Field label="Phone"><input className={fieldClass} value={phone} onChange={(event) => setPhone(event.target.value)} /></Field>
             <Field label="Role">
               <select className={fieldClass} value={role} onChange={(event) => setRole(event.target.value as Role)}>
@@ -104,7 +131,14 @@ export default function UsersPage() {
                 ))}
               </select>
             </Field>
-            <Button type="submit" disabled={pending}>{pending ? "Creating…" : "Create account"}</Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={pending}>{pending ? "Saving…" : editing ? "Save changes" : "Create account"}</Button>
+              {editing ? (
+                <Button type="button" tone="paper" onClick={resetForm}>
+                  Cancel
+                </Button>
+              ) : null}
+            </div>
           </form>
         </Card>
         <Card>
@@ -115,6 +149,15 @@ export default function UsersPage() {
             columns={[
               { key: "name", label: "Name", render: (row) => row.fullName },
               { key: "email", label: "Email", render: (row) => row.email },
+              {
+                key: "edit",
+                label: "Edit",
+                render: (row) => (
+                  <button className="text-sm font-semibold text-moss" type="button" onClick={() => beginEdit(row)}>
+                    Edit
+                  </button>
+                ),
+              },
               { key: "role", label: "Role", render: (row) => roleLabel(row.role) },
               {
                 key: "active",

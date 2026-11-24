@@ -80,7 +80,7 @@ function rowClass(tone: "active" | "quiet" | "idle") {
     quiet: "bg-white/10 text-paper",
     idle: "text-sand/90 hover:bg-white/10",
   };
-  return `flex h-8 items-center gap-2.5 rounded-xl px-2.5 text-sm font-medium transition-colors ${tones[tone]}`;
+  return `flex h-9 shrink-0 items-center gap-2.5 rounded-xl px-2.5 text-sm font-medium transition-colors ${tones[tone]}`;
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -156,7 +156,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sand/65">Shop floor</p>
           </div>
         </div>
-        <nav className="sidebar-nav flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-3">
+        <nav className="sidebar-nav flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-3 pb-3">
           {entries.map((entry) => {
             if (entry.type === "link") {
               const active = isActive(pathname, entry.href);
@@ -168,7 +168,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               );
               if (entry.href === "/profile") {
                 return (
-                  <div key={entry.href} className="mt-auto border-t border-white/10 pt-2">
+                  <div key={entry.href} className="mt-auto shrink-0 border-t border-white/10 pt-2">
                     {link}
                   </div>
                 );
@@ -179,7 +179,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             const expanded = openGroup === entry.id;
             const groupActive = entry.items.some((item) => isActive(pathname, item.href));
             return (
-              <div key={entry.id}>
+              <div key={entry.id} className="shrink-0">
                 <button
                   type="button"
                   aria-expanded={expanded}

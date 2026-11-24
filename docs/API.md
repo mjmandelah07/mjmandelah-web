@@ -319,7 +319,9 @@ Cashiers can read products. Cost price is omitted for them. Managers can create 
 
 JSON, or `multipart/form-data` when files are included.
 
-Fields: `name`, `categoryId`, `retailPrice`, `wholesalePrice`. Optional: `sku` (generated when omitted), `barcode`, `description`, `unit` (default `pcs`), `costPrice`, `wholesaleMinQty` (default 1), `reorderLevel`, `openingQuantity`, `openingUnitCost`.
+Fields: `name`, `categoryId`, `retailPrice`, `wholesalePrice`. Optional: `barcode`, `description`, `unit` (default `pcs`), `costPrice`, `wholesaleMinQty` (default 1), `reorderLevel`, `openingQuantity`, `openingUnitCost`.
+
+`sku` is always assigned by the server from the product name. It is not accepted on create or update.
 
 Files:
 
@@ -380,7 +382,7 @@ Same object as a list item.
 
 ### PATCH /products/:id
 
-Managers. Any catalog field, including `isActive`. This does not change quantity. Use stock intake or an adjustment for that. Response is the updated product.
+Managers. Any catalog field except `sku`, including `isActive`. This does not change quantity. Use stock intake or an adjustment for that. Response is the updated product.
 
 ### POST /products/:id/images
 
