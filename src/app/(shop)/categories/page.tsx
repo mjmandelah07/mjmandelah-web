@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { flattenCategories, isManager, type Category } from "@/lib/models";
 import { useSession } from "@/components/session";
-import { Button, Card, Field, Notice, PageHeader, fieldClass } from "@/components/ui";
+import { Button, Card, ConfirmModal, Field, Modal, Notice, PageHeader, fieldClass } from "@/components/ui";
 
 function findCategory(nodes: Category[], id: string): Category | null {
   for (const node of nodes) {
@@ -24,6 +24,9 @@ export default function CategoriesPage() {
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState("");
   const [editing, setEditing] = useState<Category | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -45,6 +48,16 @@ export default function CategoriesPage() {
     setDescription("");
     setParentId("");
     setEditing(null);
+    setFormOpen(false);
+  }
+
+  function beginCreate() {
+    setEditing(null);
+    setName("");
+    setDescription("");
+    setParentId("");
+    setError("");
+    setFormOpen(true);
   }
 
   function beginEdit(category: Category) {
@@ -53,6 +66,7 @@ export default function CategoriesPage() {
     setDescription(category.description ?? "");
     setParentId(category.parentId ?? "");
     setError("");
+    setFormOpen(true);
   }
 
   async function save(event: FormEvent) {
@@ -82,14 +96,19 @@ export default function CategoriesPage() {
     }
   }
 
-  async function remove(id: string) {
+  async function remove() {
+    if (!pendingDelete) return;
+    setDeleting(true);
     setError("");
     try {
-      await api(`/categories/${id}`, { method: "DELETE" });
-      if (editing?.id === id) resetForm();
+      await api(`/categories/${pendingDelete.id}`, { method: "DELETE" });
+      if (editing?.id === pendingDelete.id) resetForm();
+      setPendingDelete(null);
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not delete");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -98,51 +117,9 @@ export default function CategoriesPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Catalog" title="Categories" />
+      <PageHeader title="Categories" description="Groups for the catalog. A category can have one level of sub-categories." action={<Button type="button" onClick={beginCreate}>Add category</Button>} />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
-      <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <Card>
-          <form className="grid gap-3" onSubmit={save}>
-            <p className="font-display text-2xl">{editing ? "Edit category" : "New category"}</p>
-            <Field label="Name">
-              <input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} required minLength={2} />
-            </Field>
-            <Field label="Description">
-              <input className={fieldClass} value={description} onChange={(event) => setDescription(event.target.value)} />
-            </Field>
-            <Field
-              label="Parent"
-              hint={
-                parentLocked
-                  ? "This category has sub-categories, so it stays at the top level."
-                  : "Leave empty for a top-level category. A sub-category cannot have children."
-              }
-            >
-              <select
-                className={fieldClass}
-                value={parentId}
-                disabled={parentLocked}
-                onChange={(event) => setParentId(event.target.value)}
-              >
-                <option value="">None</option>
-                {roots.map((node) => (
-                  <option key={node.id} value={node.id}>
-                    {node.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <div className="flex gap-2">
-              <Button type="submit">{editing ? "Save changes" : "Add category"}</Button>
-              {editing ? (
-                <Button type="button" tone="paper" onClick={resetForm}>
-                  Cancel
-                </Button>
-              ) : null}
-            </div>
-          </form>
-        </Card>
-        <Card>
+      <Card>
           {flattenCategories(tree).length === 0 ? (
             <p className="text-sm text-muted">No categories yet.</p>
           ) : (
@@ -150,7 +127,7 @@ export default function CategoriesPage() {
               {flattenCategories(tree).map((row) => {
                 const category = findCategory(tree, row.id);
                 return (
-                  <li key={row.id} className={`flex items-center justify-between gap-3 py-3 ${editing?.id === row.id ? "bg-sand/60 -mx-2 rounded-xl px-2" : ""}`}>
+                  <li key={row.id} className="flex items-center justify-between gap-3 py-3">
                     <div style={{ paddingLeft: row.depth * 16 }}>
                       <p>{row.label}</p>
                       {category?.description ? <p className="text-xs text-muted">{category.description}</p> : null}
@@ -159,7 +136,7 @@ export default function CategoriesPage() {
                       <button className="text-sm font-semibold text-moss" type="button" onClick={() => category && beginEdit(category)}>
                         Edit
                       </button>
-                      <button className="text-sm text-danger" type="button" onClick={() => remove(row.id)}>
+                      <button className="text-sm text-danger" type="button" onClick={() => category && setPendingDelete(category)}>
                         Delete
                       </button>
                     </div>
@@ -169,7 +146,47 @@ export default function CategoriesPage() {
             </ul>
           )}
         </Card>
-      </div>
+      <Modal open={formOpen} title={editing ? "Edit category" : "New category"} eyebrow="Catalog" onClose={resetForm}>
+        <form className="grid gap-3" onSubmit={save}>
+          <Field label="Name">
+            <input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} required minLength={2} />
+          </Field>
+          <Field label="Description">
+            <input className={fieldClass} value={description} onChange={(event) => setDescription(event.target.value)} />
+          </Field>
+          <Field
+            label="Parent"
+            hint={
+              parentLocked
+                ? "This category has sub-categories, so it stays at the top level."
+                : "Leave empty for a top-level category. A sub-category cannot have children."
+            }
+          >
+            <select
+              className={fieldClass}
+              value={parentId}
+              disabled={parentLocked}
+              onChange={(event) => setParentId(event.target.value)}
+            >
+              <option value="">None</option>
+              {roots.map((node) => (
+                <option key={node.id} value={node.id}>
+                  {node.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Button type="submit">{editing ? "Save changes" : "Add category"}</Button>
+        </form>
+      </Modal>
+      <ConfirmModal
+        open={Boolean(pendingDelete)}
+        title="Delete category"
+        message={pendingDelete ? `Delete ${pendingDelete.name}? This cannot be undone.` : ""}
+        pending={deleting}
+        onConfirm={remove}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

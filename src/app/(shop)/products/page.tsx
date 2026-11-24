@@ -1,17 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { api, qs } from "@/lib/api";
 import { isManager, type Page, type Product } from "@/lib/models";
+import { ProductForm } from "@/components/product-form";
 import { useSession } from "@/components/session";
-import { Button, Card, DataTable, Money, Notice, PageHeader, Pager, Status, TextLink, fieldClass } from "@/components/ui";
+import { Button, Card, DataTable, Modal, Money, Notice, PageHeader, Pager, Status, TextLink, fieldClass } from "@/components/ui";
 
 function ProductList() {
   const params = useSearchParams();
+  const router = useRouter();
   const { user } = useSession();
   const manager = user ? isManager(user.role) : false;
+  const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState("");
   const [lowStock, setLowStock] = useState(params.get("lowStock") === "1");
   const [page, setPage] = useState(1);
@@ -39,13 +41,11 @@ function ProductList() {
   return (
     <div>
       <PageHeader
-        eyebrow="Catalog"
         title="Products"
+        description="What is on the shelf, the price, and how many are left."
         action={
           manager ? (
-            <Link href="/products/new">
-              <Button>Add product</Button>
-            </Link>
+            <Button type="button" onClick={() => setAdding(true)}>Add product</Button>
           ) : null
         }
       />
@@ -98,6 +98,14 @@ function ProductList() {
           />
         ) : null}
       </Card>
+      <Modal open={adding} title="New product" eyebrow="Catalog" wide onClose={() => setAdding(false)}>
+        <ProductForm
+          onSaved={(product) => {
+            setAdding(false);
+            router.push(`/products/${product.id}`);
+          }}
+        />
+      </Modal>
     </div>
   );
 }

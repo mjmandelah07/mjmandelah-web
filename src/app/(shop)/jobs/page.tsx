@@ -27,7 +27,7 @@ export default function JobsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Queue" title="Jobs" />
+      <PageHeader title="Jobs" description="Receipt archives queued after each sale." />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
       <Card>
         <DataTable

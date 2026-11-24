@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "@/lib/format";
 import type { PageMeta } from "@/lib/models";
 import { useStore } from "./store";
 
 export const fieldClass =
-  "h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-ink outline-none transition focus:border-leaf";
+  "h-11 w-full min-w-0 max-w-full rounded-xl border border-line bg-card px-3 text-sm text-ink outline-none transition focus:border-leaf";
 
 export const areaClass =
   "min-h-24 w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink outline-none transition focus:border-leaf";
@@ -109,27 +109,27 @@ export function Button({
 }
 
 export function PageHeader({
-  eyebrow,
   title,
+  description,
   action,
 }: {
-  eyebrow?: string;
   title: string;
+  description: string;
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">{eyebrow}</p> : null}
-        <h1 className="font-display text-3xl leading-tight text-ink sm:text-4xl">{title}</h1>
+    <header className="mb-6 flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="font-display text-3xl leading-tight text-ink">{title}</h1>
+        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
       </div>
-      {action}
-    </div>
+      {action ? <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
+    </header>
   );
 }
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-line bg-card p-4 shadow-[0_1px_0_rgba(28,23,18,0.04)] sm:p-5 ${className}`}>{children}</section>;
+  return <section className={`min-w-0 rounded-2xl border border-line bg-card p-4 shadow-[0_1px_0_rgba(28,23,18,0.04)] sm:p-5 ${className}`}>{children}</section>;
 }
 
 export function Notice({ children, tone = "error" }: { children: React.ReactNode; tone?: "error" | "ok" }) {
@@ -224,6 +224,96 @@ export function DataTable<T>({
         ))}
       </div>
     </>
+  );
+}
+
+export function Modal({
+  open,
+  title,
+  eyebrow,
+  onClose,
+  children,
+  wide = false,
+}: {
+  open: boolean;
+  title: string;
+  eyebrow?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  wide?: boolean;
+}) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") closeRef.current();
+    }
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-end bg-ink/40 p-4 sm:place-items-center" onClick={() => closeRef.current()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        className={`max-h-[min(92dvh,820px)] w-full overflow-y-auto rounded-2xl border border-line bg-card p-5 shadow-lg ${wide ? "max-w-2xl" : "max-w-md"}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">{eyebrow}</p> : null}
+            <h2 id="modal-title" className="font-display text-3xl leading-tight">{title}</h2>
+          </div>
+          <button type="button" className="rounded-lg px-2 py-1 text-sm text-muted hover:bg-sand" onClick={() => closeRef.current()}>
+            Close
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmModal({
+  open,
+  title,
+  message,
+  confirmLabel = "Delete",
+  pending = false,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  pending?: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal open={open} title={title} onClose={onClose}>
+      <p className="text-sm text-muted">{message}</p>
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <Button type="button" tone="danger" disabled={pending} onClick={onConfirm}>
+          {pending ? "Working…" : confirmLabel}
+        </Button>
+        <Button type="button" tone="paper" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
   );
 }
 

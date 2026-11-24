@@ -131,7 +131,10 @@ export default function SellPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Sell" title={channel === "RETAIL" ? "Retail counter" : "Wholesale counter"} />
+      <PageHeader
+        title={channel === "RETAIL" ? "Retail counter" : "Wholesale counter"}
+        description={channel === "RETAIL" ? "Ring up a retail sale and print the receipt." : "Sell at the wholesale price when the quantity meets the minimum."}
+      />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
       {created ? (
         <Card className="mb-4">

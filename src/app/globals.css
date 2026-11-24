@@ -42,6 +42,13 @@ input,
 select,
 textarea {
   font: inherit;
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
 }
 
 .sidebar-nav {

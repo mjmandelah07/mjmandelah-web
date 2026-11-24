@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { api, qs } from "@/lib/api";
 import { formatWhen } from "@/lib/format";
 import type { DamageReport, Page, Product } from "@/lib/models";
-import { Button, Card, DataTable, Field, Notice, PageHeader, areaClass, fieldClass } from "@/components/ui";
+import { Button, Card, DataTable, Field, Modal, Notice, PageHeader, areaClass, fieldClass } from "@/components/ui";
 
 export default function DamagesPage() {
   const [search, setSearch] = useState("");
@@ -15,6 +15,7 @@ export default function DamagesPage() {
   const [notes, setNotes] = useState("");
   const [images, setImages] = useState<FileList | null>(null);
   const [rows, setRows] = useState<DamageReport[]>([]);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState("");
 
   function load() {
@@ -52,6 +53,7 @@ export default function DamagesPage() {
       setReason("");
       setNotes("");
       setImages(null);
+      setFormOpen(false);
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not record the damage");
@@ -60,15 +62,15 @@ export default function DamagesPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Shelf" title="Damages" />
-      {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
-      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card>
-          <form className="mb-4 flex gap-2" onSubmit={findProducts}>
-            <input className={fieldClass} placeholder="Find a product" value={search} onChange={(event) => setSearch(event.target.value)} />
-            <Button type="submit" tone="paper">Find</Button>
-          </form>
-          <form className="grid gap-3" onSubmit={submit}>
+      <PageHeader title="Damages" description="Goods that left the shelf because they are damaged, with a photo." action={<Button type="button" onClick={() => { setError(""); setFormOpen(true); }}>Record damage</Button>} />
+      {error && !formOpen ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
+      <Modal open={formOpen} title="Record damage" eyebrow="Shelf" onClose={() => setFormOpen(false)}>
+        <form className="mb-4 flex gap-2" onSubmit={findProducts}>
+          <input className={fieldClass} placeholder="Find a product" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Button type="submit" tone="paper">Find</Button>
+        </form>
+        <form className="grid gap-3" onSubmit={submit}>
+          {error ? <Notice>{error}</Notice> : null}
             <Field label="Product">
               <select className={fieldClass} value={productId} onChange={(event) => setProductId(event.target.value)} required>
                 <option value="">Choose</option>
@@ -91,8 +93,8 @@ export default function DamagesPage() {
             </Field>
             <Button type="submit">Record damage</Button>
           </form>
-        </Card>
-        <Card>
+      </Modal>
+      <Card>
           <DataTable
             rows={rows}
             rowKey={(row) => row.id}
@@ -116,8 +118,7 @@ export default function DamagesPage() {
               },
             ]}
           />
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 }

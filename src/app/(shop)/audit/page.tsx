@@ -98,12 +98,12 @@ function AuditList() {
   return (
     <div>
       <PageHeader
-        eyebrow="Ledger"
         title="Audit"
+        description="Every sale in the dates you choose, including voids, returns, and who rang it up."
         action={manager ? <TextLink href="/analytics">Charts</TextLink> : undefined}
       />
       <Card>
-        <form className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={onFilter}>
+        <form className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3" onSubmit={onFilter}>
           <input className={fieldClass} placeholder="Receipt number" value={search} onChange={(event) => setSearch(event.target.value)} />
           <select className={fieldClass} value={channel} aria-label="Channel" onChange={(event) => setChannel(event.target.value)}>
             <option value="">Retail and wholesale</option>
@@ -134,11 +134,11 @@ function AuditList() {
               ))}
             </select>
           ) : null}
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:col-span-2 xl:col-span-1">
             <input className={fieldClass} type="date" value={from} aria-label="From" onChange={(event) => setFrom(event.target.value)} />
             <input className={fieldClass} type="date" value={to} aria-label="To" onChange={(event) => setTo(event.target.value)} />
           </div>
-          <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
+          <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-3">
             <Button type="submit">Apply filters</Button>
             <Button type="button" tone="paper" onClick={clearDates}>
               Any date
@@ -146,15 +146,15 @@ function AuditList() {
           </div>
         </form>
 
-        <form className="mb-4 grid gap-2" onSubmit={findProducts}>
-          <div className="flex flex-col gap-2 sm:flex-row">
+        <form className="mb-4" onSubmit={findProducts}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
-              className={fieldClass}
+              className={`${fieldClass} min-w-0 flex-1`}
               placeholder="Find a product by name or SKU"
               value={productQuery}
               onChange={(event) => setProductQuery(event.target.value)}
             />
-            <Button type="submit" tone="paper">
+            <Button type="submit" tone="paper" className="shrink-0">
               Find product
             </Button>
           </div>

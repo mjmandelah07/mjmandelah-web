@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { flattenCategories, isManager, type Category, type Product } from "@/lib/models";
 import { useSession } from "@/components/session";
-import { Button, Card, Field, Money, Notice, PageHeader, Status, areaClass, fieldClass } from "@/components/ui";
+import { Button, Card, ConfirmModal, Field, Modal, Money, Notice, PageHeader, Status, areaClass, fieldClass } from "@/components/ui";
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
@@ -15,6 +15,8 @@ export default function ProductDetailPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [imageToRemove, setImageToRemove] = useState<string | null>(null);
 
   function load() {
     api<Product>(`/products/${params.id}`)
@@ -51,6 +53,7 @@ export default function ProductDetailPage() {
     if (form.get("costPrice")) body.costPrice = Number(form.get("costPrice"));
     try {
       setProduct(await api<Product>(`/products/${product.id}`, { method: "PATCH", body: JSON.stringify(body) }));
+      setEditOpen(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not update");
     } finally {
@@ -84,7 +87,16 @@ export default function ProductDetailPage() {
 
   return (
     <div>
-      <PageHeader eyebrow={product.sku} title={product.name} action={product.isLowStock ? <Status value="LOW" /> : null} />
+      <PageHeader
+        title={product.name}
+        description={`SKU ${product.sku}. ${product.category.name}. Prices, stock, and photos.`}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {product.isLowStock ? <Status value="LOW" /> : null}
+            {manager ? <Button type="button" onClick={() => { setError(""); setEditOpen(true); }}>Edit product</Button> : null}
+          </div>
+        }
+      />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
       <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
         <Card>
@@ -108,22 +120,21 @@ export default function ProductDetailPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={image.url} alt="" className="h-28 w-full object-cover" />
                 {manager ? (
-                  <button className="w-full py-1 text-xs text-danger" type="button" onClick={() => removeImage(image.id)}>
+                  <button className="w-full py-1 text-xs text-danger" type="button" onClick={() => setImageToRemove(image.id)}>
                     Remove
                   </button>
                 ) : null}
               </figure>
             ))}
           </div>
-          {manager ? (
-            <Field label="Add photos">
-              <input className={`${fieldClass} mt-2`} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => addImages(event.target.files)} />
-            </Field>
-          ) : null}
         </Card>
-        {manager ? (
-          <Card>
-            <form className="grid gap-3" onSubmit={save}>
+        <Card>
+          <p>{product.description || "No description."}</p>
+          <p className="mt-3 text-sm text-muted">{product.category.name} · barcode {product.barcode || "none"}</p>
+        </Card>
+      </div>
+      <Modal open={editOpen} title="Edit product" eyebrow={product.sku} wide onClose={() => setEditOpen(false)}>
+        <form className="grid gap-3" onSubmit={save} key={product.updatedAt ?? product.id}>
               <Field label="Name"><input className={fieldClass} name="name" defaultValue={product.name} required /></Field>
               <Field label="Category">
                 <select className={fieldClass} name="categoryId" defaultValue={product.category.id}>
@@ -150,16 +161,23 @@ export default function ProductDetailPage() {
                 Active
               </label>
               <p className="text-xs text-muted">SKU {product.sku} stays as the shop assigned it. Quantity changes through stock intake or an adjustment.</p>
+              <Field label="Add photos">
+                <input className={fieldClass} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => addImages(event.target.files)} />
+              </Field>
               <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save changes"}</Button>
-            </form>
-          </Card>
-        ) : (
-          <Card>
-            <p>{product.description || "No description."}</p>
-            <p className="mt-3 text-sm text-muted">{product.category.name} · barcode {product.barcode || "none"}</p>
-          </Card>
-        )}
-      </div>
+        </form>
+      </Modal>
+      <ConfirmModal
+        open={Boolean(imageToRemove)}
+        title="Remove photo"
+        message="Remove this photo from the product?"
+        pending={pending}
+        onConfirm={() => {
+          if (!imageToRemove) return;
+          removeImage(imageToRemove).finally(() => setImageToRemove(null));
+        }}
+        onClose={() => setImageToRemove(null)}
+      />
     </div>
   );
 }

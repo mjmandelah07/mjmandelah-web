@@ -46,9 +46,9 @@ export default function SalesPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Ledger" title="Sales" />
+      <PageHeader title="Sales" description="Completed sales for the dates you choose, and the receipt for each one." />
       <Card>
-        <form className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={onFilter}>
+        <form className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3" onSubmit={onFilter}>
           <input className={fieldClass} placeholder="Receipt number" value={search} onChange={(event) => setSearch(event.target.value)} />
           <select className={fieldClass} value={channel} onChange={(event) => setChannel(event.target.value)}>
             <option value="">All channels</option>

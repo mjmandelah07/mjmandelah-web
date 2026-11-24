@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api, qs } from "@/lib/api";
 import type { Customer, Page } from "@/lib/models";
-import { Button, Card, DataTable, Field, Money, Notice, PageHeader, TextLink, fieldClass } from "@/components/ui";
+import { Button, Card, DataTable, Field, Modal, Money, Notice, PageHeader, TextLink, fieldClass } from "@/components/ui";
 
 export default function CustomersPage() {
   const [rows, setRows] = useState<Customer[]>([]);
@@ -11,6 +11,7 @@ export default function CustomersPage() {
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
 
   function load(nextSearch = search) {
     api<Page<Customer>>(`/customers${qs({ search: nextSearch, pageSize: 50 })}`)
@@ -33,6 +34,7 @@ export default function CustomersPage() {
       });
       setName("");
       setPhone("");
+      setFormOpen(false);
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not create the customer");
@@ -41,17 +43,9 @@ export default function CustomersPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Accounts" title="Customers" />
+      <PageHeader title="Customers" description="People who buy on credit, and what they still owe." action={<Button type="button" onClick={() => setFormOpen(true)}>Add customer</Button>} />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
-      <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <Card>
-          <form className="grid gap-3" onSubmit={create}>
-            <Field label="Name"><input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
-            <Field label="Phone"><input className={fieldClass} value={phone} onChange={(event) => setPhone(event.target.value)} /></Field>
-            <Button type="submit">Add customer</Button>
-          </form>
-        </Card>
-        <Card>
+      <Card>
           <form
             className="mb-4 flex gap-2"
             onSubmit={(event) => {
@@ -72,8 +66,15 @@ export default function CustomersPage() {
               { key: "balance", label: "Balance", render: (row) => <Money amount={row.balance} /> },
             ]}
           />
-        </Card>
-      </div>
+      </Card>
+      <Modal open={formOpen} title="New customer" eyebrow="Accounts" onClose={() => setFormOpen(false)}>
+        <form className="grid gap-3" onSubmit={create}>
+          {error ? <Notice>{error}</Notice> : null}
+          <Field label="Name"><input className={fieldClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
+          <Field label="Phone"><input className={fieldClass} value={phone} onChange={(event) => setPhone(event.target.value)} /></Field>
+          <Button type="submit">Add customer</Button>
+        </form>
+      </Modal>
     </div>
   );
 }

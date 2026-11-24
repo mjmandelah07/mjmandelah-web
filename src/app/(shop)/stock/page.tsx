@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { formatWhen } from "@/lib/format";
 import { isManager, type Page, type Product, type StockIntake, type StockMovement, type Supplier } from "@/lib/models";
 import { useSession } from "@/components/session";
-import { Button, Card, DataTable, Field, Money, Notice, PageHeader, Status, fieldClass } from "@/components/ui";
+import { Button, Card, DataTable, Field, Modal, Money, Notice, PageHeader, Status, fieldClass } from "@/components/ui";
 
 export default function StockPage() {
   const { user } = useSession();
@@ -25,6 +25,8 @@ export default function StockPage() {
   const [direction, setDirection] = useState<"INCREASE" | "DECREASE">("DECREASE");
   const [reason, setReason] = useState("");
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [intakeOpen, setIntakeOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -79,6 +81,7 @@ export default function StockPage() {
       setReference("");
       setUnitCost("");
       setReceipt(null);
+      setIntakeOpen(false);
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Intake failed");
@@ -99,6 +102,7 @@ export default function StockPage() {
         }),
       });
       setReason("");
+      setAdjustOpen(false);
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Adjustment failed");
@@ -107,12 +111,20 @@ export default function StockPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Warehouse" title="Stock" />
-      {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-3 font-display text-2xl">Receive delivery</h2>
-          <form className="grid gap-3" onSubmit={intake}>
+      <PageHeader
+        title="Stock"
+        description="Receive a delivery or correct the quantity on hand."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => { setError(""); setIntakeOpen(true); }}>Receive delivery</Button>
+            <Button type="button" tone="paper" onClick={() => { setError(""); setAdjustOpen(true); }}>Adjust count</Button>
+          </div>
+        }
+      />
+      {error && !intakeOpen && !adjustOpen ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
+      <Modal open={intakeOpen} title="Receive delivery" eyebrow="Warehouse" onClose={() => setIntakeOpen(false)}>
+        <form className="grid gap-3" onSubmit={intake}>
+          {error ? <Notice>{error}</Notice> : null}
             <Field label="Product">
               <select className={fieldClass} value={productId} onChange={(event) => setProductId(event.target.value)}>
                 {products.map((product) => (
@@ -138,10 +150,10 @@ export default function StockPage() {
             </Field>
             <Button type="submit">Save intake</Button>
           </form>
-        </Card>
-        <Card>
-          <h2 className="mb-3 font-display text-2xl">Adjust count</h2>
-          <form className="grid gap-3" onSubmit={adjust}>
+      </Modal>
+      <Modal open={adjustOpen} title="Adjust count" eyebrow="Warehouse" onClose={() => setAdjustOpen(false)}>
+        <form className="grid gap-3" onSubmit={adjust}>
+          {error ? <Notice>{error}</Notice> : null}
             <Field label="Product">
               <select className={fieldClass} value={adjustProduct} onChange={(event) => setAdjustProduct(event.target.value)}>
                 {products.map((product) => (
@@ -163,9 +175,8 @@ export default function StockPage() {
             </Field>
             <Button type="submit" tone="paper">Save adjustment</Button>
           </form>
-        </Card>
-      </div>
-      <Card className="mt-4">
+      </Modal>
+      <Card>
         <h2 className="mb-2 font-display text-2xl">Intakes</h2>
         <DataTable
           rows={intakes}

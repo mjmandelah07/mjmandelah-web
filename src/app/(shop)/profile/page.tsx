@@ -42,7 +42,7 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Account" title="Profile" />
+      <PageHeader title="Profile" description="Your name, role, and the password you use to sign in." />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <dl className="grid grid-cols-[8rem_1fr] gap-y-3 text-sm">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, qs } from "@/lib/api";
 import { isManager, type Page, type Supplier } from "@/lib/models";
 import { useSession } from "@/components/session";
-import { Button, Card, DataTable, Field, Notice, PageHeader, areaClass, fieldClass } from "@/components/ui";
+import { Button, Card, DataTable, Field, Modal, Notice, PageHeader, areaClass, fieldClass } from "@/components/ui";
 
 const empty = { name: "", phone: "", email: "", address: "", notes: "" };
 
@@ -16,6 +16,7 @@ export default function SuppliersPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState<Supplier | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,6 +37,14 @@ export default function SuppliersPage() {
   function resetForm() {
     setForm(empty);
     setEditing(null);
+    setFormOpen(false);
+  }
+
+  function beginCreate() {
+    setForm(empty);
+    setEditing(null);
+    setError("");
+    setFormOpen(true);
   }
 
   function beginEdit(supplier: Supplier) {
@@ -48,6 +57,7 @@ export default function SuppliersPage() {
       notes: supplier.notes ?? "",
     });
     setError("");
+    setFormOpen(true);
   }
 
   function setField(key: keyof typeof empty, value: string) {
@@ -90,38 +100,9 @@ export default function SuppliersPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Buying" title="Suppliers" />
+      <PageHeader title="Suppliers" description="Who you buy from, and how to reach them." action={<Button type="button" onClick={beginCreate}>Add supplier</Button>} />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
-      <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <Card>
-          <form className="grid gap-3" onSubmit={save}>
-            <p className="font-display text-2xl">{editing ? "Edit supplier" : "New supplier"}</p>
-            <Field label="Name">
-              <input className={fieldClass} value={form.name} onChange={(event) => setField("name", event.target.value)} required minLength={2} />
-            </Field>
-            <Field label="Phone">
-              <input className={fieldClass} value={form.phone} onChange={(event) => setField("phone", event.target.value)} />
-            </Field>
-            <Field label="Email">
-              <input className={fieldClass} type="email" value={form.email} onChange={(event) => setField("email", event.target.value)} />
-            </Field>
-            <Field label="Address">
-              <input className={fieldClass} value={form.address} onChange={(event) => setField("address", event.target.value)} />
-            </Field>
-            <Field label="Notes">
-              <textarea className={areaClass} value={form.notes} onChange={(event) => setField("notes", event.target.value)} />
-            </Field>
-            <div className="flex gap-2">
-              <Button type="submit">{editing ? "Save changes" : "Add supplier"}</Button>
-              {editing ? (
-                <Button type="button" tone="paper" onClick={resetForm}>
-                  Cancel
-                </Button>
-              ) : null}
-            </div>
-          </form>
-        </Card>
-        <Card>
+      <Card>
           <form className="mb-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); load(); }}>
             <input className={fieldClass} placeholder="Search" value={search} onChange={(event) => setSearch(event.target.value)} />
             <Button type="submit" tone="paper">Search</Button>
@@ -162,8 +143,27 @@ export default function SuppliersPage() {
               },
             ]}
           />
-        </Card>
-      </div>
+      </Card>
+      <Modal open={formOpen} title={editing ? "Edit supplier" : "New supplier"} eyebrow="Buying" onClose={resetForm}>
+        <form className="grid gap-3" onSubmit={save}>
+          <Field label="Name">
+            <input className={fieldClass} value={form.name} onChange={(event) => setField("name", event.target.value)} required minLength={2} />
+          </Field>
+          <Field label="Phone">
+            <input className={fieldClass} value={form.phone} onChange={(event) => setField("phone", event.target.value)} />
+          </Field>
+          <Field label="Email">
+            <input className={fieldClass} type="email" value={form.email} onChange={(event) => setField("email", event.target.value)} />
+          </Field>
+          <Field label="Address">
+            <input className={fieldClass} value={form.address} onChange={(event) => setField("address", event.target.value)} />
+          </Field>
+          <Field label="Notes">
+            <textarea className={areaClass} value={form.notes} onChange={(event) => setField("notes", event.target.value)} />
+          </Field>
+          <Button type="submit">{editing ? "Save changes" : "Add supplier"}</Button>
+        </form>
+      </Modal>
     </div>
   );
 }

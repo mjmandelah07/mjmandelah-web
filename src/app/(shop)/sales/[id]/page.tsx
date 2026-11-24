@@ -6,7 +6,7 @@ import { api, downloadAuthorized, openAuthorized } from "@/lib/api";
 import { formatWhen } from "@/lib/format";
 import { isManager, type Sale } from "@/lib/models";
 import { useSession } from "@/components/session";
-import { Button, Card, DataTable, Money, Notice, PageHeader, Status } from "@/components/ui";
+import { Button, Card, ConfirmModal, DataTable, Money, Notice, PageHeader, Status } from "@/components/ui";
 
 export default function SaleDetailPage() {
   const params = useParams<{ id: string }>();
@@ -15,6 +15,7 @@ export default function SaleDetailPage() {
   const [sale, setSale] = useState<Sale | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [confirmVoid, setConfirmVoid] = useState(false);
 
   useEffect(() => {
     api<Sale>(`/sales/${params.id}`)
@@ -28,6 +29,7 @@ export default function SaleDetailPage() {
     setError("");
     try {
       setSale(await api<Sale>(`/sales/${sale.id}/void`, { method: "POST" }));
+      setConfirmVoid(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not void this sale");
     } finally {
@@ -40,8 +42,8 @@ export default function SaleDetailPage() {
   return (
     <div>
       <PageHeader
-        eyebrow={formatWhen(sale.createdAt)}
         title={sale.receiptNumber}
+        description={`Sold ${formatWhen(sale.createdAt)}. Print the receipt or download the PDF.`}
         action={
           <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={() => openAuthorized(`/sales/${sale.id}/receipt/print`)}>Print</Button>
@@ -94,8 +96,8 @@ export default function SaleDetailPage() {
           </dl>
           {sale.notes ? <p className="mt-3 text-sm text-muted">{sale.notes}</p> : null}
           {manager && sale.status === "COMPLETED" ? (
-            <Button className="mt-4" tone="danger" type="button" disabled={pending} onClick={voidSale}>
-              {pending ? "Voiding…" : "Void sale"}
+            <Button className="mt-4" tone="danger" type="button" onClick={() => setConfirmVoid(true)}>
+              Void sale
             </Button>
           ) : null}
         </Card>
@@ -116,6 +118,15 @@ export default function SaleDetailPage() {
           </ul>
         </Card>
       ) : null}
+      <ConfirmModal
+        open={confirmVoid}
+        title="Void this sale"
+        message="Voiding returns the stock and reverses any credit from this sale. This cannot be undone."
+        confirmLabel="Void sale"
+        pending={pending}
+        onConfirm={voidSale}
+        onClose={() => setConfirmVoid(false)}
+      />
     </div>
   );
 }

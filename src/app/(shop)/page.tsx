@@ -44,8 +44,8 @@ export default function DashboardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Today"
         title={`Hello, ${user?.fullName.split(" ")[0] ?? "there"}`}
+        description="What sold today, what is running low, and the next sale."
         action={
           <Link href="/sell">
             <Button>New sale</Button>

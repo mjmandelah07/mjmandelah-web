@@ -84,7 +84,7 @@ export default function AnalyticsPage() {
   if (user && !manager) {
     return (
       <div>
-        <PageHeader eyebrow="Shop" title="Analytics" />
+        <PageHeader title="Analytics" description="Totals and the chart for the range you pick." />
         <Notice>Analytics is for managers.</Notice>
       </div>
     );
@@ -95,8 +95,8 @@ export default function AnalyticsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Shop"
         title="Analytics"
+        description="Totals and the chart for the range you pick."
         action={<TextLink href={auditHref}>Open this range in the audit</TextLink>}
       />
 
@@ -120,7 +120,7 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      <form className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={onCustom}>
+      <form className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" onSubmit={onCustom}>
         <input className={fieldClass} type="date" value={from} aria-label="From" onChange={(event) => setFrom(event.target.value)} />
         <input className={fieldClass} type="date" value={to} aria-label="To" onChange={(event) => setTo(event.target.value)} />
         <select className={fieldClass} value={bucket} aria-label="Chart buckets" onChange={(event) => setBucket(event.target.value as Bucket)}>

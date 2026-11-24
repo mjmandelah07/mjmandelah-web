@@ -52,7 +52,7 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Receipts" title="Store profile" />
+      <PageHeader title="Store" description="The name, currency, and footer printed on every receipt." />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
       {ok ? <div className="mb-4"><Notice tone="ok">{ok}</Notice></div> : null}
       <Card>

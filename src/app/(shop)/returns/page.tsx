@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { api, qs } from "@/lib/api";
 import { formatWhen } from "@/lib/format";
 import type { Page, ReturnRecord, Sale } from "@/lib/models";
-import { Button, Card, DataTable, Field, Money, Notice, PageHeader, fieldClass } from "@/components/ui";
+import { Button, Card, DataTable, Field, Modal, Money, Notice, PageHeader, fieldClass } from "@/components/ui";
 
 export default function ReturnsPage() {
   const [search, setSearch] = useState("");
@@ -12,6 +12,7 @@ export default function ReturnsPage() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [reason, setReason] = useState("");
   const [rows, setRows] = useState<ReturnRecord[]>([]);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
 
@@ -64,6 +65,7 @@ export default function ReturnsPage() {
       setOk("Return saved and stock restored.");
       setReason("");
       setQuantities({});
+      setFormOpen(false);
       const full = await api<Sale>(`/sales/${sale.id}`);
       setSale(full);
       loadReturns();
@@ -74,17 +76,17 @@ export default function ReturnsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="After the sale" title="Returns" />
-      {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
+      <PageHeader title="Returns" description="Send goods back to the shelf and refund the share the customer actually paid." action={<Button type="button" onClick={() => { setError(""); setFormOpen(true); }}>Record return</Button>} />
+      {error && !formOpen ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
       {ok ? <div className="mb-4"><Notice tone="ok">{ok}</Notice></div> : null}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <form className="flex gap-2" onSubmit={find}>
-            <input className={fieldClass} placeholder="Receipt number" value={search} onChange={(event) => setSearch(event.target.value)} />
-            <Button type="submit" tone="paper">Find</Button>
-          </form>
-          {sale ? (
-            <form className="mt-4 grid gap-3" onSubmit={submit}>
+      <Modal open={formOpen} title="Record return" eyebrow="After the sale" wide onClose={() => setFormOpen(false)}>
+        <form className="flex gap-2" onSubmit={find}>
+          <input className={fieldClass} placeholder="Receipt number" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Button type="submit" tone="paper">Find</Button>
+        </form>
+        {error ? <div className="mt-3"><Notice>{error}</Notice></div> : null}
+        {sale ? (
+          <form className="mt-4 grid gap-3" onSubmit={submit}>
               <p className="text-sm text-muted">{sale.receiptNumber} · {sale.status}</p>
               {sale.items.map((item) => (
                 <div key={item.id} className="grid grid-cols-[1fr_90px] items-center gap-2">
@@ -107,9 +109,9 @@ export default function ReturnsPage() {
               </Field>
               <Button type="submit">Record return</Button>
             </form>
-          ) : null}
-        </Card>
-        <Card>
+        ) : null}
+      </Modal>
+      <Card>
           <h2 className="mb-2 font-display text-2xl">Recent</h2>
           <DataTable
             rows={rows}
@@ -122,8 +124,7 @@ export default function ReturnsPage() {
               { key: "refund", label: "Refund", render: (row) => <Money amount={row.refundAmount} /> },
             ]}
           />
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 }

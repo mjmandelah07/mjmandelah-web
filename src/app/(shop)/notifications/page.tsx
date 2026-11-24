@@ -35,8 +35,8 @@ export default function NotificationsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Shelf"
         title="Alerts"
+        description="Low stock and other notices that still need a look."
         action={<Button type="button" tone="paper" onClick={markAll}>Mark all read</Button>}
       />
       {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}

@@ -6,7 +6,7 @@ import { api, qs } from "@/lib/api";
 import { roleLabel } from "@/lib/format";
 import { isManager, type Page, type Role, type StaffUser } from "@/lib/models";
 import { useSession } from "@/components/session";
-import { Button, Card, DataTable, Field, Notice, PageHeader, fieldClass } from "@/components/ui";
+import { Button, Card, DataTable, Field, Modal, Notice, PageHeader, fieldClass } from "@/components/ui";
 
 export default function UsersPage() {
   const { user } = useSession();
@@ -22,6 +22,7 @@ export default function UsersPage() {
   const [copyError, setCopyError] = useState("");
   const [handed, setHanded] = useState<{ name: string; email: string; password: string } | null>(null);
   const [editing, setEditing] = useState<StaffUser | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   useEffect(() => {
     if (user && !isManager(user.role)) router.replace("/");
@@ -43,6 +44,17 @@ export default function UsersPage() {
     setPhone("");
     setRole("CASHIER");
     setEditing(null);
+    setFormOpen(false);
+  }
+
+  function beginCreate() {
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setRole("CASHIER");
+    setEditing(null);
+    setError("");
+    setFormOpen(true);
   }
 
   function beginEdit(member: StaffUser) {
@@ -52,6 +64,7 @@ export default function UsersPage() {
     setPhone(member.phone ?? "");
     setRole(member.role);
     setError("");
+    setFormOpen(true);
   }
 
   async function create(event: FormEvent) {
@@ -112,36 +125,9 @@ export default function UsersPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Access" title="Staff" />
-      {error ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
-      <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
-        <Card>
-          <form className="grid gap-3" onSubmit={create}>
-            <p className="font-display text-2xl">{editing ? "Edit staff" : "New staff"}</p>
-            <Field label="Full name"><input className={fieldClass} value={fullName} onChange={(event) => setFullName(event.target.value)} required minLength={2} /></Field>
-            <Field label="Email"><input className={fieldClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
-            {editing ? null : (
-              <p className="text-xs text-muted">A password is created for them. You copy it from the next screen and send it yourself.</p>
-            )}
-            <Field label="Phone"><input className={fieldClass} value={phone} onChange={(event) => setPhone(event.target.value)} /></Field>
-            <Field label="Role">
-              <select className={fieldClass} value={role} onChange={(event) => setRole(event.target.value as Role)}>
-                {roles.map((item) => (
-                  <option key={item} value={item}>{roleLabel(item)}</option>
-                ))}
-              </select>
-            </Field>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={pending}>{pending ? "Saving…" : editing ? "Save changes" : "Create account"}</Button>
-              {editing ? (
-                <Button type="button" tone="paper" onClick={resetForm}>
-                  Cancel
-                </Button>
-              ) : null}
-            </div>
-          </form>
-        </Card>
-        <Card>
+      <PageHeader title="Staff" description="Accounts for cashiers and managers. A new password is shown once, then you pass it on." action={<Button type="button" onClick={beginCreate}>Add staff</Button>} />
+      {error && !formOpen ? <div className="mb-4"><Notice>{error}</Notice></div> : null}
+      <Card>
           <DataTable
             rows={rows}
             rowKey={(row) => row.id}
@@ -170,14 +156,30 @@ export default function UsersPage() {
               },
             ]}
           />
-        </Card>
-      </div>
-      {handed ? (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-ink/40 p-4 sm:place-items-center">
-          <div role="dialog" aria-modal="true" aria-labelledby="account-created" className="w-full max-w-md rounded-2xl border border-line bg-card p-5 shadow-lg">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">Sign-in details</p>
-            <h2 id="account-created" className="font-display text-3xl">Account created</h2>
-            <p className="mt-2 text-sm text-muted">
+      </Card>
+      <Modal open={formOpen} title={editing ? "Edit staff" : "New staff"} eyebrow="Access" onClose={resetForm}>
+        <form className="grid gap-3" onSubmit={create}>
+          {error ? <Notice>{error}</Notice> : null}
+          <Field label="Full name"><input className={fieldClass} value={fullName} onChange={(event) => setFullName(event.target.value)} required minLength={2} /></Field>
+          <Field label="Email"><input className={fieldClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
+          {editing ? null : (
+            <p className="text-xs text-muted">A password is created for them. You copy it from the next screen and send it yourself.</p>
+          )}
+          <Field label="Phone"><input className={fieldClass} value={phone} onChange={(event) => setPhone(event.target.value)} /></Field>
+          <Field label="Role">
+            <select className={fieldClass} value={role} onChange={(event) => setRole(event.target.value as Role)}>
+              {roles.map((item) => (
+                <option key={item} value={item}>{roleLabel(item)}</option>
+              ))}
+            </select>
+          </Field>
+          <Button type="submit" disabled={pending}>{pending ? "Saving…" : editing ? "Save changes" : "Create account"}</Button>
+        </form>
+      </Modal>
+      <Modal open={Boolean(handed)} title="Account created" eyebrow="Sign-in details" onClose={() => setHanded(null)}>
+        {handed ? (
+          <>
+            <p className="text-sm text-muted">
               Give these to {handed.name}. This password is shown only now. They can change it from Profile after signing in.
             </p>
             <dl className="mt-4 grid gap-3 rounded-xl bg-sand/70 p-3 text-sm">
@@ -195,9 +197,9 @@ export default function UsersPage() {
               <Button type="button" onClick={copyDetails}>{copied ? "Copied" : "Copy email and password"}</Button>
               <Button type="button" tone="paper" onClick={() => setHanded(null)}>Done</Button>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </Modal>
     </div>
   );
 }
